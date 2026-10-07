@@ -40,13 +40,13 @@
     <header class="page-header">
       <div class="page-label">
         <span class="label-dot"></span>
-        <span>MEDIA PLAYER / 网页视频播放器</span>
+        <span>VIDEO / 视频交互</span>
       </div>
       <h1 class="page-title">
-        <span>纯原生</span>
-        <span class="gradient-text">视频播放器</span>
+        <span>视频</span>
+        <span class="gradient-text">交互实验</span>
       </h1>
-      <p class="page-sub">零依赖 · 玻璃态 UI · 完整键盘控制 · 自定义播放列表</p>
+      <p class="page-sub">关于视频交互的一些想法和尝试 · 拖拽识别 · 声纹预警 · 内容检索</p>
     </header>
 
     <!-- 播放器主区 -->
@@ -203,122 +203,149 @@
 
         <!-- 购物车拖拽图标（暂停时出现，可拖到画面任意物体上） -->
         <div class="shop-cursor" id="shopCursor" draggable="false">
-          <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.73 1.31-.13 3.36 1.45 3.36h10v-2H7.42c-.18 0-.31-.18-.24-.34L8.13 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.67-1.24C4.32 2.29 4.07 2 3.73 2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.73 1.31-.13 3.36 1.45 3.36h10v-2H7.42c-.18 0-.31-.18-.24-.34L8.13 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.67-1.24C4.32 2.29 4.07 2 3.73 2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
           <span class="shop-cursor-label">拖我</span>
         </div>
 
-        <!-- 商品识别卡片（拖到物体上后弹出） -->
-        <div class="shop-card" id="shopCard" hidden>
-          <div class="shop-card-head">
-            <span class="shop-card-badge">AI 识别</span>
-            <button class="shop-card-close" id="shopCardClose" aria-label="关闭">×</button>
-          </div>
-          <div class="shop-card-body">
-            <div class="shop-card-thumb" id="shopCardThumb"></div>
-            <div class="shop-card-info">
-              <h4 class="shop-card-name" id="shopCardName">--</h4>
-              <p class="shop-card-type" id="shopCardType">--</p>
-              <div class="shop-card-row">
-                <span class="shop-card-price" id="shopCardPrice">--</span>
-              </div>
-              <div class="shop-card-row">
-                <span class="shop-card-source-label">购买渠道</span>
-                <span class="shop-card-source" id="shopCardSource">--</span>
-              </div>
-              <div class="shop-card-row">
-                <span class="shop-card-similar-label">相似商品</span>
-                <span class="shop-card-similar" id="shopCardSimilar">--</span>
-              </div>
-              <button class="shop-card-buy">加入购物车</button>
-            </div>
-          </div>
+        <!-- 矩形识别框（拖拽松开后在该位置展开） -->
+        <div class="detect-box" id="detectBox" hidden>
+          <span class="detect-box-label" id="detectBoxLabel">--</span>
+          <span class="detect-box-conf" id="detectBoxConf"></span>
+          <span class="detect-box-note">当前未接入模型 · 展示使用测试数据</span>
         </div>
+
+        <!-- 声纹波形（叠加在进度条上方） -->
+        <canvas class="player-waveform" id="playerWaveform"></canvas>
       </div>
     </section>
 
-    <!-- ===== 三大创新概念演示区 ===== -->
+    <!-- 视频内容描述区（AI 提炼过程） -->
+    <section class="content-desc-section">
+      <div class="content-desc-card">
+        <div class="content-desc-head">
+          <span class="content-desc-badge">AI 内容理解</span>
+          <span class="content-desc-video" id="contentDescVideo">--</span>
+        </div>
+        <div class="content-desc-flow">
+          <div class="desc-step">
+            <span class="desc-step-num">Step 1</span>
+            <span class="desc-step-title">视频内容描述</span>
+            <p class="desc-step-text" id="descStep1">--</p>
+          </div>
+          <span class="desc-arrow">→</span>
+          <div class="desc-step">
+            <span class="desc-step-num">Step 2</span>
+            <span class="desc-step-title">提炼关键词</span>
+            <div class="desc-step-tags" id="descStep2">--</div>
+          </div>
+          <span class="desc-arrow">→</span>
+          <div class="desc-step">
+            <span class="desc-step-num">Step 3</span>
+            <span class="desc-step-title">可检索内容</span>
+            <div class="desc-step-tags" id="descStep3">--</div>
+          </div>
+        </div>
+        <p class="content-desc-note">备注：当前为预设示例数据，真实实现需接入多模态视频理解模型（如 GPT-4V / Gemini / Qwen-VL）。</p>
+      </div>
+    </section>
+
+    <!-- ===== 想法交流区 ===== -->
     <section class="concept-section">
       <div class="concept-header">
-        <span class="concept-badge">CONCEPT DEMO</span>
-        <h2>视频交互的三大新可能</h2>
-        <p>这不是一个普通播放器，而是一个展示视频交互新可能的概念平台。下面三大功能均为概念演示，真实实现需要 AI 视觉识别 / 音频频谱分析 / 视频内容理解 等技术支撑。</p>
+        <span class="concept-badge">IDEAS · 想法</span>
+        <h2>关于视频交互的一些想法</h2>
+        <p>这里记录一些关于视频交互的设想和尝试。不是炫技，而是交流 — 聊聊为什么这样设计、打算怎么做、做成之后能带来什么。功能还在迭代，后续会继续添加新的想法。</p>
       </div>
 
-      <!-- 功能1: 视频购物车 -->
+      <!-- 想法1: 视频购物车 -->
       <article class="concept-card" id="conceptShop">
         <div class="concept-card-head">
-          <span class="concept-num">01</span>
+          <span class="concept-num">想法</span>
           <div>
-            <h3>视频购物车 · 拖拽即识别</h3>
+            <h3>拖拽即识别</h3>
             <p class="concept-card-desc">
-              暂停视频后，画面上会出现一个可拖拽的购物车图标。把它拖到视频里任意物体上，松开后弹出该物体的商品识别卡片 —
-              名称、款式、价格、购买渠道、相似商品。把"看视频"变成"逛视频"。
+              <b>设计原因：</b>看视频时常常会被画面里的某样东西吸引 — 一件衣服、一个水杯、一辆车 — 但传统播放器没法回应这种好奇心。
+              <br><b>如何实现：</b>暂停视频后画面上出现一个可拖拽的购物车图标，拖到画面任意位置松开，会在该位置展开一个矩形框，标识"识别到这里有什么"。
+              真实实现需要接入计算机视觉模型（如 YOLO / CLIP）做目标检测。
+              <br><b>好处：</b>把"看视频"变成"逛视频"，看到什么感兴趣的东西随手一拖就知道是什么、哪里有卖。
             </p>
             <div class="concept-hint">
               <span class="hint-step">1. 暂停视频</span>
               <span class="hint-arrow">→</span>
-              <span class="hint-step">2. 拖动购物车图标到画面物体上</span>
+              <span class="hint-step">2. 拖动购物车图标到画面位置</span>
               <span class="hint-arrow">→</span>
-              <span class="hint-step">3. 松开查看商品卡片</span>
+              <span class="hint-step">3. 松开后矩形框标识识别结果</span>
             </div>
+            <p class="concept-note">备注：当前未接入视觉模型，矩形框位置和识别结果使用测试数据演示。</p>
           </div>
         </div>
         <div class="concept-demo shop-demo">
           <div class="demo-mock-frame">
+            <!-- 静态展示用的矩形识别框示例 -->
+            <div class="detect-box detect-box-static">
+              <span class="detect-box-label">人物 · 92%</span>
+            </div>
             <div class="demo-mock-scene">
-              <span class="mock-obj" data-obj="0">AR 角色</span>
-              <span class="mock-obj" data-obj="1">背景光效</span>
-              <span class="mock-obj" data-obj="2">人物服装</span>
+              <span class="mock-obj" data-obj="0">人物</span>
+              <span class="mock-obj" data-obj="1">手</span>
+              <span class="mock-obj" data-obj="2">手机</span>
             </div>
             <div class="demo-mock-cart">🛒</div>
-            <p class="demo-mock-tip">上方为模拟视频画面，把购物车拖到任意物体上试试</p>
+            <p class="demo-mock-tip">上方为模拟视频画面，拖动右上角购物车到任意位置松开</p>
           </div>
         </div>
       </article>
 
-      <!-- 功能2: 声纹预警 -->
+      <!-- 想法2: 声纹预警 -->
       <article class="concept-card" id="conceptWave">
         <div class="concept-card-head">
-          <span class="concept-num">02</span>
+          <span class="concept-num">想法</span>
           <div>
-            <h3>声纹预警 · 看见声音的形状</h3>
+            <h3>声纹预警</h3>
             <p class="concept-card-desc">
-              进度条上方显示整段视频的音频波形趋势，让用户在播放前就能预判哪一刻声音会骤然变大。
-              戴耳机的用户不再被突然的爆炸声 / 喊叫惊吓 — 红色标记是"此处音量骤增"的预警点，可以提前调小音量。
+              <b>设计原因：</b>戴耳机看视频时，突然的爆炸声、喊叫声会惊吓到用户，甚至可能损伤听力。
+              <br><b>如何实现：</b>在播放器进度条上方叠加一条声纹波形，高音量段标红、低音量段标绿/蓝，用户播放前就能预判哪一刻会突然变响。
+              真实实现需要用 Web Audio API 提取整段音频的响度包络。
+              <br><b>好处：</b>戴耳机的用户可以提前调小音量，避免被惊吓。也方便快速定位视频里"高潮"和"安静"的片段。
             </p>
             <div class="concept-hint">
-              <span class="hint-step">红色竖线 = 音量骤增预警</span>
+              <span class="hint-step">红色 = 高音量预警</span>
               <span class="hint-arrow">→</span>
-              <span class="hint-step">蓝色波形 = 整段声音趋势</span>
+              <span class="hint-step">绿/蓝 = 低音量</span>
+              <span class="hint-arrow">→</span>
+              <span class="hint-step">进度条上方实时显示</span>
             </div>
+            <p class="concept-note">备注：当前波形为预设示例数据，真实实现需用 Web Audio API 解码音频。</p>
           </div>
         </div>
         <div class="concept-demo wave-demo">
           <canvas id="waveformCanvas"></canvas>
           <div class="wave-legend">
-            <span class="legend-item"><i class="legend-dot dot-blue"></i>音量趋势</span>
-            <span class="legend-item"><i class="legend-dot dot-red"></i>骤增预警</span>
-            <span class="legend-item"><i class="legend-dot dot-green"></i>当前播放位置</span>
+            <span class="legend-item"><i class="legend-dot dot-red"></i>高音量</span>
+            <span class="legend-item"><i class="legend-dot dot-blue"></i>中音量</span>
+            <span class="legend-item"><i class="legend-dot dot-green"></i>低音量</span>
+            <span class="legend-item"><i class="legend-dot dot-white"></i>当前播放位置</span>
           </div>
         </div>
       </article>
 
-      <!-- 功能3: AI 内容搜索 -->
+      <!-- 想法3: AI 内容搜索 -->
       <article class="concept-card" id="conceptSearch">
         <div class="concept-card-head">
-          <span class="concept-num">03</span>
+          <span class="concept-num">想法</span>
           <div>
-            <h3>AI 内容搜索 · 从标签到内容</h3>
+            <h3>从标签到内容的检索</h3>
             <p class="concept-card-desc">
-              传统视频搜索靠人工标签 — 但标签写不全、写不准。AI 内容搜索把整段视频"读"一遍，
-              提取出所有出现过的关键事物（西瓜、乒乓球、恐龙、吃火锅…），哪怕标签里没写，
-              也能精准命中。把几小时的视频压缩成可搜索的关键词云。
+              <b>设计原因：</b>传统视频搜索靠人工打标签，但标签写不全、写不准。一段几小时的视频里可能藏着"吃火锅""打乒乓球""恐龙"等用户关心的内容，但标签里完全没提。
+              <br><b>如何实现：</b>用多模态大模型把整段视频"读"一遍，提取所有出现过的关键事物，建成可搜索的索引。用户输入关键词即可跳转到该内容出现的时间点。
+              <br><b>好处：</b>把几小时的视频压缩成可搜索的关键词云，用户能精准命中自己想看的片段，而不是从头到尾快进。
             </p>
             <div class="concept-hint">
               <span class="hint-step">点击下方任一关键词</span>
               <span class="hint-arrow">→</span>
               <span class="hint-step">跳转到该内容出现的视频时间点</span>
             </div>
+            <p class="concept-note">备注：当前关键词为预设示例数据，真实实现需接入多模态视频理解模型。</p>
           </div>
         </div>
         <div class="concept-demo search-demo">
