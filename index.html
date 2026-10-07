@@ -70,6 +70,12 @@
           <div class="spinner"></div>
         </div>
 
+        <!-- 弹幕层 -->
+        <div class="danmaku-layer" id="danmakuLayer"></div>
+
+        <!-- 字幕层 -->
+        <div class="subtitle" id="subtitle"></div>
+
         <!-- 控制层 -->
         <div class="controls" id="controls">
 
@@ -153,7 +159,17 @@
                   </div>
                 </div>
 
-                <!-- 字幕/设置/全屏（设置按钮预留） -->
+                <!-- 字幕 -->
+                <button class="ctrl" id="ccBtn" aria-label="字幕" title="字幕 (C)">
+                  <svg viewBox="0 0 24 24"><path d="M19 4H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H5V6h14v12zM7 15h4v-1H7v1zm5 0h5v-1h-5v1z"/></svg>
+                </button>
+
+                <!-- 弹幕 -->
+                <button class="ctrl" id="danmakuBtn" aria-label="弹幕" title="弹幕 (D)">
+                  <svg viewBox="0 0 24 24"><path d="M21 4H3c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h3v3l3-3h12c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/></svg>
+                </button>
+
+                <!-- 循环 -->
                 <button class="ctrl" id="loopBtn" aria-label="循环" title="循环">
                   <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
                 </button>
@@ -163,6 +179,20 @@
                   <svg class="icon-fs-exit" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
                 </button>
               </div>
+            </div>
+
+            <!-- 弹幕输入条 -->
+            <div class="danmaku-input-bar" id="danmakuInputBar">
+              <select id="danmakuColor" class="danmaku-color" title="弹幕颜色">
+                <option value="white">白</option>
+                <option value="blue">蓝</option>
+                <option value="pink">粉</option>
+                <option value="yellow">黄</option>
+                <option value="green">绿</option>
+                <option value="purple">紫</option>
+              </select>
+              <input type="text" id="danmakuInput" placeholder="发个弹幕..." maxlength="50" />
+              <button class="danmaku-send" id="danmakuSend" aria-label="发送">发送</button>
             </div>
           </div>
 

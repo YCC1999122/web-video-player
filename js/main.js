@@ -113,6 +113,15 @@
   const repeatBtn = $('repeatBtn');
   const toast = $('toast');
   const buffering = $('buffering');
+  // 字幕/弹幕
+  const ccBtn = $('ccBtn');
+  const danmakuBtn = $('danmakuBtn');
+  const subtitle = $('subtitle');
+  const danmakuLayer = $('danmakuLayer');
+  const danmakuInputBar = $('danmakuInputBar');
+  const danmakuInput = $('danmakuInput');
+  const danmakuColor = $('danmakuColor');
+  const danmakuSend = $('danmakuSend');
 
   // ===== 状态 =====
   let currentIndex = 0;
@@ -120,6 +129,79 @@
   let isShuffle = false;
   let isRepeatList = true;
   let hideControlsTimer = null;
+  // 字幕/弹幕
+  let subtitleEnabled = false;
+  let danmakuEnabled = false;
+  let userDanmakuQueue = []; // {time, text, color} 待发送的弹幕(基于时间触发)
+  let danmakuLoopTimer = null;
+  let lastSubtitleIdx = -1;
+
+  // ===== 字幕数据（示例占位，按视频索引）=====
+  // 用户说"即便没有效果"也要先加上，这里用示例字幕做演示。
+  // 每条字幕 {time: 起始秒, text: 文本}，按 time 升序。
+  const SUBTITLES = {
+    0: [
+      { time: 0, text: '♪ Big Buck Bunny · Blender Foundation ♪' },
+      { time: 8, text: '森林深处，住着一只巨大的兔子' },
+      { time: 22, text: '它享受着平静的午后时光' },
+      { time: 40, text: '三只小啮齿动物正在策划恶作剧…' },
+      { time: 70, text: '巨大的兔子不会任人捉弄' },
+      { time: 95, text: '一场幽默而温柔的反击开始了' },
+      { time: 130, text: '最终，森林恢复了宁静' },
+      { time: 160, text: '— 短片结束 —' }
+    ],
+    1: [
+      { time: 0, text: '♪ Elephants Dream · Blender Foundation ♪' },
+      { time: 10, text: '两个角色走入一个奇异的机械世界' },
+      { time: 35, text: 'Emo 与 Proog 在「机器」中前行' },
+      { time: 80, text: '一切看似随机，却暗藏秩序' },
+      { time: 140, text: '当机械开始回应，故事走向终章' },
+      { time: 200, text: '— 短片结束 —' }
+    ],
+    2: [
+      { time: 0, text: '♪ For Bigger Blazes · Google ♪' },
+      { time: 3, text: '火焰的画面测试片段' },
+      { time: 8, text: '— 短片结束 —' }
+    ],
+    3: [
+      { time: 0, text: '♪ For Bigger Escapes · Google ♪' },
+      { time: 3, text: '汽车逃亡场景测试片段' },
+      { time: 8, text: '— 短片结束 —' }
+    ],
+    4: [
+      { time: 0, text: '♪ Sintel · Blender Foundation ♪' },
+      { time: 12, text: '少女 Sintel 与小飞龙建立友谊' },
+      { time: 50, text: '飞龙长大后，被成年巨龙掠走' },
+      { time: 120, text: 'Sintel 踏上漫长的寻龙之旅' },
+      { time: 240, text: '终点是冰雪与命运的对峙' },
+      { time: 320, text: '— 短片结束 —' }
+    ],
+    5: [
+      { time: 0, text: '♪ Tears of Steel · Blender Institute ♪' },
+      { time: 12, text: '阿姆斯特丹，机器人入侵' },
+      { time: 50, text: '一群战士与科学家挺身而出' },
+      { time: 120, text: '关键在于一段被遗忘的记忆' },
+      { time: 240, text: '科学与勇气最终改变结局' },
+      { time: 350, text: '— 短片结束 —' }
+    ]
+  };
+
+  // ===== 弹幕示例数据（基于视频时间触发）=====
+  const SAMPLE_DANMAKU = [
+    { offset: 1, text: '前排支持！', color: 'yellow' },
+    { offset: 4, text: '画质真不错', color: 'blue' },
+    { offset: 8, text: '哈哈这个开头', color: 'pink' },
+    { offset: 14, text: '经典之作必看', color: 'white' },
+    { offset: 20, text: 'BGM 好听', color: 'purple' },
+    { offset: 28, text: '这颜色绝了', color: 'green' },
+    { offset: 36, text: '看了一遍又一遍', color: 'yellow' },
+    { offset: 45, text: '666', color: 'blue' },
+    { offset: 55, text: '细节满满', color: 'pink' },
+    { offset: 65, text: '这转折可以', color: 'white' },
+    { offset: 75, text: '泪目了', color: 'purple' },
+    { offset: 85, text: '收藏了', color: 'green' }
+  ];
+  let firedSampleSet = new Set(); // 已触发的示例弹幕 key，避免重复
 
   // ===== 工具函数 =====
   function formatTime(s) {
@@ -142,6 +224,132 @@
 
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
+  }
+
+  // ===== 字幕：开关 / 同步 =====
+  function toggleSubtitle() {
+    subtitleEnabled = !subtitleEnabled;
+    ccBtn.classList.toggle('cc-active', subtitleEnabled);
+    showToast(subtitleEnabled ? '字幕开' : '字幕关');
+    if (!subtitleEnabled) {
+      subtitle.classList.remove('show');
+      lastSubtitleIdx = -1;
+    }
+  }
+
+  function updateSubtitle() {
+    if (!subtitleEnabled) return;
+    const subs = SUBTITLES[currentIndex] || [];
+    if (!subs.length) {
+      subtitle.classList.remove('show');
+      return;
+    }
+    const t = video.currentTime;
+    // 找到当前时间对应的字幕（最后一条 time <= t）
+    let idx = -1;
+    for (let i = subs.length - 1; i >= 0; i--) {
+      if (subs[i].time <= t) { idx = i; break; }
+    }
+    if (idx !== lastSubtitleIdx) {
+      lastSubtitleIdx = idx;
+      if (idx >= 0) {
+        subtitle.textContent = subs[idx].text;
+        subtitle.classList.add('show');
+      } else {
+        subtitle.classList.remove('show');
+      }
+    }
+  }
+
+  // ===== 弹幕：开关 / 渲染 / 发送 =====
+  function toggleDanmaku() {
+    danmakuEnabled = !danmakuEnabled;
+    danmakuBtn.classList.toggle('danmaku-active', danmakuEnabled);
+    danmakuLayer.classList.toggle('hidden', !danmakuEnabled);
+    danmakuInputBar.classList.toggle('show', danmakuEnabled);
+    showToast(danmakuEnabled ? '弹幕开' : '弹幕关');
+    if (danmakuEnabled) {
+      startDanmakuLoop();
+    } else {
+      stopDanmakuLoop();
+      // 清空当前弹幕
+      danmakuLayer.innerHTML = '';
+    }
+  }
+
+  function spawnDanmaku(text, color = 'white') {
+    if (!danmakuEnabled || !text) return;
+    const item = document.createElement('div');
+    item.className = 'danmaku-item color-' + color;
+    item.textContent = text;
+    // 随机轨道（5 条），避免完全重叠
+    const track = Math.floor(Math.random() * 5);
+    item.style.top = (12 + track * 38) + 'px';
+    item.style.right = '0';
+    item.style.transform = 'translateX(100%)';
+    danmakuLayer.appendChild(item);
+
+    // 测量宽度后启动滚动
+    const w = item.offsetWidth;
+    const layerW = danmakuLayer.offsetWidth || playerWrap.offsetWidth;
+    const distance = layerW + w + 20;
+    // 速度：6~9 秒走完，文字越长稍微慢一点
+    const duration = 6000 + Math.random() * 3000 + Math.min(w * 8, 2500);
+
+    requestAnimationFrame(() => {
+      item.style.transition = `transform ${duration}ms linear`;
+      item.style.transform = `translateX(-${distance}px)`;
+    });
+    setTimeout(() => { if (item.parentNode) item.remove(); }, duration + 200);
+  }
+
+  function sendDanmaku() {
+    const text = danmakuInput.value.trim();
+    if (!text) return;
+    const color = danmakuColor.value || 'white';
+    spawnDanmaku(text, color);
+    danmakuInput.value = '';
+    danmakuInput.focus();
+    showToast('弹幕已发送');
+  }
+
+  function startDanmakuLoop() {
+    stopDanmakuLoop();
+    danmakuLoopTimer = setInterval(() => {
+      if (!danmakuEnabled || video.paused || video.ended) return;
+      const t = video.currentTime;
+      // 触发示例弹幕（按 offset 触发）
+      SAMPLE_DANMAKU.forEach((d, i) => {
+        const key = currentIndex + '-' + i;
+        if (!firedSampleSet.has(key) && t >= d.offset && t < d.offset + 0.6) {
+          firedSampleSet.add(key);
+          spawnDanmaku(d.text, d.color);
+        }
+      });
+      // 触发用户排队弹幕
+      userDanmakuQueue = userDanmakuQueue.filter(d => {
+        if (d.time <= t) {
+          spawnDanmaku(d.text, d.color);
+          return false;
+        }
+        return true;
+      });
+    }, 400);
+  }
+
+  function stopDanmakuLoop() {
+    if (danmakuLoopTimer) {
+      clearInterval(danmakuLoopTimer);
+      danmakuLoopTimer = null;
+    }
+  }
+
+  function resetDanmakuForNewVideo() {
+    firedSampleSet.clear();
+    userDanmakuQueue = [];
+    danmakuLayer.innerHTML = '';
+    lastSubtitleIdx = -1;
+    if (subtitleEnabled) subtitle.classList.remove('show');
   }
 
   // ===== 加载视频 =====
@@ -167,6 +375,9 @@
     [...playlistEl.children].forEach((el, i) => {
       el.classList.toggle('active', i === index);
     });
+
+    // 重置字幕/弹幕状态（新视频切换时）
+    resetDanmakuForNewVideo();
 
     if (autoplay) {
       video.play().catch(() => {});
@@ -382,6 +593,7 @@
   video.addEventListener('timeupdate', () => {
     updateProgress();
     updateBuffered();
+    updateSubtitle();
   });
   video.addEventListener('progress', updateBuffered);
   video.addEventListener('waiting', () => buffering.hidden = false);
@@ -437,8 +649,8 @@
 
   // ===== 键盘快捷键 =====
   document.addEventListener('keydown', (e) => {
-    // 输入框中不触发
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // 输入框/选择框中不触发
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
     if (e.target === speedMenu) return;
 
     switch (e.code) {
@@ -482,6 +694,14 @@
         e.preventDefault();
         playPrev();
         break;
+      case 'KeyC':
+        e.preventDefault();
+        toggleSubtitle();
+        break;
+      case 'KeyD':
+        e.preventDefault();
+        toggleDanmaku();
+        break;
       case 'Digit0': case 'Digit1': case 'Digit2':
       case 'Digit3': case 'Digit4': case 'Digit5':
       case 'Digit6': case 'Digit7': case 'Digit8':
@@ -492,6 +712,17 @@
           showToast('跳转到 ' + (n * 10) + '%');
         }
         break;
+    }
+  });
+
+  // ===== 字幕/弹幕按钮事件 =====
+  ccBtn.addEventListener('click', toggleSubtitle);
+  danmakuBtn.addEventListener('click', toggleDanmaku);
+  danmakuSend.addEventListener('click', sendDanmaku);
+  danmakuInput.addEventListener('keydown', (e) => {
+    if (e.code === 'Enter') {
+      e.preventDefault();
+      sendDanmaku();
     }
   });
 
