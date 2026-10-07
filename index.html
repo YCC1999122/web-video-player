@@ -200,7 +200,140 @@
 
         <!-- Toast 提示 -->
         <div class="toast" id="toast"></div>
+
+        <!-- 购物车拖拽图标（暂停时出现，可拖到画面任意物体上） -->
+        <div class="shop-cursor" id="shopCursor" draggable="false">
+          <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.73 1.31-.13 3.36 1.45 3.36h10v-2H7.42c-.18 0-.31-.18-.24-.34L8.13 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.67-1.24C4.32 2.29 4.07 2 3.73 2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <span class="shop-cursor-label">拖我</span>
+        </div>
+
+        <!-- 商品识别卡片（拖到物体上后弹出） -->
+        <div class="shop-card" id="shopCard" hidden>
+          <div class="shop-card-head">
+            <span class="shop-card-badge">AI 识别</span>
+            <button class="shop-card-close" id="shopCardClose" aria-label="关闭">×</button>
+          </div>
+          <div class="shop-card-body">
+            <div class="shop-card-thumb" id="shopCardThumb"></div>
+            <div class="shop-card-info">
+              <h4 class="shop-card-name" id="shopCardName">--</h4>
+              <p class="shop-card-type" id="shopCardType">--</p>
+              <div class="shop-card-row">
+                <span class="shop-card-price" id="shopCardPrice">--</span>
+              </div>
+              <div class="shop-card-row">
+                <span class="shop-card-source-label">购买渠道</span>
+                <span class="shop-card-source" id="shopCardSource">--</span>
+              </div>
+              <div class="shop-card-row">
+                <span class="shop-card-similar-label">相似商品</span>
+                <span class="shop-card-similar" id="shopCardSimilar">--</span>
+              </div>
+              <button class="shop-card-buy">加入购物车</button>
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
+
+    <!-- ===== 三大创新概念演示区 ===== -->
+    <section class="concept-section">
+      <div class="concept-header">
+        <span class="concept-badge">CONCEPT DEMO</span>
+        <h2>视频交互的三大新可能</h2>
+        <p>这不是一个普通播放器，而是一个展示视频交互新可能的概念平台。下面三大功能均为概念演示，真实实现需要 AI 视觉识别 / 音频频谱分析 / 视频内容理解 等技术支撑。</p>
+      </div>
+
+      <!-- 功能1: 视频购物车 -->
+      <article class="concept-card" id="conceptShop">
+        <div class="concept-card-head">
+          <span class="concept-num">01</span>
+          <div>
+            <h3>视频购物车 · 拖拽即识别</h3>
+            <p class="concept-card-desc">
+              暂停视频后，画面上会出现一个可拖拽的购物车图标。把它拖到视频里任意物体上，松开后弹出该物体的商品识别卡片 —
+              名称、款式、价格、购买渠道、相似商品。把"看视频"变成"逛视频"。
+            </p>
+            <div class="concept-hint">
+              <span class="hint-step">1. 暂停视频</span>
+              <span class="hint-arrow">→</span>
+              <span class="hint-step">2. 拖动购物车图标到画面物体上</span>
+              <span class="hint-arrow">→</span>
+              <span class="hint-step">3. 松开查看商品卡片</span>
+            </div>
+          </div>
+        </div>
+        <div class="concept-demo shop-demo">
+          <div class="demo-mock-frame">
+            <div class="demo-mock-scene">
+              <span class="mock-obj" data-obj="0">AR 角色</span>
+              <span class="mock-obj" data-obj="1">背景光效</span>
+              <span class="mock-obj" data-obj="2">人物服装</span>
+            </div>
+            <div class="demo-mock-cart">🛒</div>
+            <p class="demo-mock-tip">上方为模拟视频画面，把购物车拖到任意物体上试试</p>
+          </div>
+        </div>
+      </article>
+
+      <!-- 功能2: 声纹预警 -->
+      <article class="concept-card" id="conceptWave">
+        <div class="concept-card-head">
+          <span class="concept-num">02</span>
+          <div>
+            <h3>声纹预警 · 看见声音的形状</h3>
+            <p class="concept-card-desc">
+              进度条上方显示整段视频的音频波形趋势，让用户在播放前就能预判哪一刻声音会骤然变大。
+              戴耳机的用户不再被突然的爆炸声 / 喊叫惊吓 — 红色标记是"此处音量骤增"的预警点，可以提前调小音量。
+            </p>
+            <div class="concept-hint">
+              <span class="hint-step">红色竖线 = 音量骤增预警</span>
+              <span class="hint-arrow">→</span>
+              <span class="hint-step">蓝色波形 = 整段声音趋势</span>
+            </div>
+          </div>
+        </div>
+        <div class="concept-demo wave-demo">
+          <canvas id="waveformCanvas"></canvas>
+          <div class="wave-legend">
+            <span class="legend-item"><i class="legend-dot dot-blue"></i>音量趋势</span>
+            <span class="legend-item"><i class="legend-dot dot-red"></i>骤增预警</span>
+            <span class="legend-item"><i class="legend-dot dot-green"></i>当前播放位置</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- 功能3: AI 内容搜索 -->
+      <article class="concept-card" id="conceptSearch">
+        <div class="concept-card-head">
+          <span class="concept-num">03</span>
+          <div>
+            <h3>AI 内容搜索 · 从标签到内容</h3>
+            <p class="concept-card-desc">
+              传统视频搜索靠人工标签 — 但标签写不全、写不准。AI 内容搜索把整段视频"读"一遍，
+              提取出所有出现过的关键事物（西瓜、乒乓球、恐龙、吃火锅…），哪怕标签里没写，
+              也能精准命中。把几小时的视频压缩成可搜索的关键词云。
+            </p>
+            <div class="concept-hint">
+              <span class="hint-step">点击下方任一关键词</span>
+              <span class="hint-arrow">→</span>
+              <span class="hint-step">跳转到该内容出现的视频时间点</span>
+            </div>
+          </div>
+        </div>
+        <div class="concept-demo search-demo">
+          <div class="search-input-row">
+            <input type="text" id="aiSearchInput" placeholder="搜索视频内容（如：挥手 / 西瓜 / 吃火锅）" />
+            <button id="aiSearchBtn">搜索</button>
+          </div>
+          <div class="search-tags" id="aiSearchTags"></div>
+          <div class="search-result" id="aiSearchResult" hidden>
+            <span class="search-result-label">命中：</span>
+            <span id="aiSearchHit"></span>
+            <span class="search-result-time" id="aiSearchTime"></span>
+          </div>
+        </div>
+      </article>
     </section>
 
     <!-- 下方信息 + 播放列表 -->

@@ -11,6 +11,29 @@
   // 后续可替换为你自己的视频源。
   const PLAYLIST = [
     {
+      title: '问候 · Hello',
+      author: 'AR Generated Demo',
+      src: '问候.mp4',
+      duration: '0:08',
+      views: '0.5K',
+      likes: '0.1K',
+      desc: 'AR 生成的问候演示视频，作为本页三大创新概念（视频购物车 / 声纹预警 / AI 内容搜索）的演示素材。',
+      fmt: 'MP4 / 720p',
+      // AI 提取的视频内容关键词（用于功能3：AI 内容搜索）
+      aiTags: ['问候', '挥手', 'AR 角色', '虚拟形象', '人物', '动画', '演示', '科技感', '蓝色背景', '3D 渲染'],
+      // 视频中可识别的"商品"（用于功能1：视频购物车）
+      objects: [
+        { name: 'AR 虚拟形象', type: '3D 模型', price: '¥199 / 月', source: 'Meta Avatar Studio', similar: 'Ready Player Me · VRoid Studio' },
+        { name: '蓝色背景光效', type: '特效素材', price: '¥29 / 段', source: 'Envato Elements', similar: 'Motion Array · Artgrid' },
+        { name: '人物服装', type: '虚拟服饰', price: '¥49 / 套', source: 'Sketchfab', similar: 'CGTrader · TurboSquid' }
+      ],
+      // 声纹波形数据（0-1 的相对音量，用于功能2：声纹预警）
+      // 在第 4 秒和第 6 秒有突然的响声（红色预警点）
+      waveform: [0.2, 0.25, 0.3, 0.4, 0.85, 0.95, 0.9, 0.5, 0.3, 0.25, 0.2, 0.18, 0.2, 0.22, 0.2, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.3, 0.25, 0.2],
+      // 声纹预警时间点（秒）
+      audioWarnings: [3.8, 5.5]
+    },
+    {
       title: 'Big Buck Bunny',
       author: 'Blender Foundation',
       src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
@@ -18,7 +41,15 @@
       views: '12.5K',
       likes: '1.2K',
       desc: '一只巨大的兔子在森林中遭遇三只小啮齿动物的恶作剧，最终以幽默的方式完成反击。Blender 基金会经典开源短片。',
-      fmt: 'MP4 / 1080p'
+      fmt: 'MP4 / 1080p',
+      aiTags: ['兔子', '森林', '恶作剧', '啮齿动物', '反击', '幽默', '自然', '飞行', '蝴蝶', '果篮'],
+      objects: [
+        { name: '果篮（南瓜/苹果）', type: '水果', price: '¥39.9 / 篮', source: '盒马鲜生', similar: '每日优鲜 · 京东生鲜' },
+        { name: '巨大兔子', type: '毛绒玩具', price: '¥129', source: '名创优品', similar: 'IKEA · Disney Store' },
+        { name: '森林场景', type: '壁纸素材', price: '免费', source: 'Unsplash', similar: 'Pexels · Pixabay' }
+      ],
+      waveform: [0.15, 0.2, 0.3, 0.4, 0.5, 0.4, 0.3, 0.2, 0.6, 0.7, 0.8, 0.9, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.3, 0.5, 0.7, 0.6, 0.4, 0.3],
+      audioWarnings: [8.5]
     },
     {
       title: 'Elephants Dream',
@@ -122,6 +153,22 @@
   const danmakuInput = $('danmakuInput');
   const danmakuColor = $('danmakuColor');
   const danmakuSend = $('danmakuSend');
+  // 三大概念功能
+  const shopCursor = $('shopCursor');
+  const shopCard = $('shopCard');
+  const shopCardClose = $('shopCardClose');
+  const shopCardName = $('shopCardName');
+  const shopCardType = $('shopCardType');
+  const shopCardPrice = $('shopCardPrice');
+  const shopCardSource = $('shopCardSource');
+  const shopCardSimilar = $('shopCardSimilar');
+  const waveformCanvas = $('waveformCanvas');
+  const aiSearchInput = $('aiSearchInput');
+  const aiSearchBtn = $('aiSearchBtn');
+  const aiSearchTags = $('aiSearchTags');
+  const aiSearchResult = $('aiSearchResult');
+  const aiSearchHit = $('aiSearchHit');
+  const aiSearchTime = $('aiSearchTime');
 
   // ===== 状态 =====
   let currentIndex = 0;
@@ -352,6 +399,229 @@
     if (subtitleEnabled) subtitle.classList.remove('show');
   }
 
+  // ===== 功能1: 视频购物车（暂停时显示购物车图标，可拖拽到画面物体上）=====
+  function showShopCursor() {
+    if (!video.paused) return;
+    shopCursor.classList.add('show');
+  }
+  function hideShopCursor() {
+    shopCursor.classList.remove('show', 'dragging');
+  }
+  function showShopCard(objIndex) {
+    const item = PLAYLIST[currentIndex];
+    const objs = item.objects || [];
+    if (objIndex < 0 || objIndex >= objs.length) return;
+    const obj = objs[objIndex];
+    shopCardName.textContent = obj.name;
+    shopCardType.textContent = '类型：' + obj.type;
+    shopCardPrice.textContent = obj.price;
+    shopCardSource.textContent = obj.source;
+    shopCardSimilar.textContent = obj.similar;
+    shopCard.hidden = false;
+  }
+  function hideShopCard() {
+    shopCard.hidden = true;
+  }
+  // 购物车拖拽
+  let shopDragState = { active: false, offsetX: 0, offsetY: 0 };
+  shopCursor.addEventListener('mousedown', (e) => {
+    shopDragState.active = true;
+    const rect = shopCursor.getBoundingClientRect();
+    shopDragState.offsetX = e.clientX - rect.left - rect.width / 2;
+    shopDragState.offsetY = e.clientY - rect.top - rect.height / 2;
+    shopCursor.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!shopDragState.active) return;
+    const wrapRect = playerWrap.getBoundingClientRect();
+    const x = e.clientX - wrapRect.left - shopDragState.offsetX;
+    const y = e.clientY - wrapRect.top - shopDragState.offsetY;
+    shopCursor.style.left = x + 'px';
+    shopCursor.style.top = y + 'px';
+    shopCursor.style.right = 'auto';
+    shopCursor.style.transform = 'translate(0, 0)';
+  });
+  document.addEventListener('mouseup', (e) => {
+    if (!shopDragState.active) return;
+    shopDragState.active = false;
+    shopCursor.classList.remove('dragging');
+    // 检测松开位置：随机模拟识别一个物体（真实场景需 AI 视觉识别）
+    // 在概念演示里，我们模拟"识别到画面中某个物体"
+    const objs = PLAYLIST[currentIndex].objects || [];
+    if (objs.length) {
+      const hitIndex = Math.floor(Math.random() * objs.length);
+      showShopCard(hitIndex);
+      showToast('已识别：' + objs[hitIndex].name);
+    }
+  });
+  shopCardClose.addEventListener('click', hideShopCard);
+
+  // 概念演示框：点击 mock-obj 触发商品卡片
+  document.querySelectorAll('.mock-obj').forEach(el => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.dataset.obj);
+      el.classList.add('hit');
+      setTimeout(() => el.classList.remove('hit'), 600);
+      showShopCard(idx);
+      showToast('已识别：' + (PLAYLIST[currentIndex].objects?.[idx]?.name || '物体'));
+    });
+  });
+
+  // ===== 功能2: 声纹波形绘制 =====
+  function drawWaveform() {
+    const ctx = waveformCanvas.getContext('2d');
+    const w = waveformCanvas.width = waveformCanvas.offsetWidth;
+    const h = waveformCanvas.height = waveformCanvas.offsetHeight;
+    const item = PLAYLIST[currentIndex];
+    const data = item.waveform || [];
+    const warnings = item.audioWarnings || [];
+    ctx.clearRect(0, 0, w, h);
+
+    if (!data.length) {
+      ctx.fillStyle = 'rgba(148,163,184,0.4)';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('该视频无声纹数据', w / 2, h / 2);
+      return;
+    }
+
+    // 背景网格
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const y = (h / 5) * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // 波形柱状图
+    const barW = w / data.length;
+    const playProgress = video.duration ? (video.currentTime / video.duration) : 0;
+    data.forEach((v, i) => {
+      const barH = v * h * 0.85;
+      const x = i * barW;
+      const y = (h - barH) / 2;
+      // 已播放部分用渐变，未播放部分用淡色
+      const played = (i / data.length) < playProgress;
+      if (played) {
+        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+        grad.addColorStop(0, '#60a5fa');
+        grad.addColorStop(1, '#3b82f6');
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = 'rgba(96,165,250,0.3)';
+      }
+      ctx.fillRect(x, y, Math.max(barW - 1, 1), barH);
+    });
+
+    // 预警点（红色竖线）
+    if (video.duration) {
+      warnings.forEach(t => {
+        const x = (t / video.duration) * w;
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+        // 顶部三角标记
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(x - 5, 0);
+        ctx.lineTo(x + 5, 0);
+        ctx.lineTo(x, 6);
+        ctx.closePath();
+        ctx.fill();
+      });
+    }
+
+    // 当前播放位置（绿色竖线）
+    if (video.duration) {
+      const x = playProgress * w;
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+  }
+
+  // ===== 功能3: AI 内容搜索 =====
+  function renderAiTags() {
+    const item = PLAYLIST[currentIndex];
+    const tags = item.aiTags || [];
+    aiSearchTags.innerHTML = '';
+    tags.forEach((tag, i) => {
+      const el = document.createElement('span');
+      el.className = 'search-tag';
+      el.textContent = tag;
+      el.dataset.tag = tag;
+      // 每个关键词映射一个模拟时间点（均匀分布）
+      el.dataset.time = (i * (video.duration || 8) / tags.length).toFixed(1);
+      el.addEventListener('click', () => {
+        // 清除其他 matched
+        document.querySelectorAll('.search-tag').forEach(t => t.classList.remove('matched'));
+        el.classList.add('matched');
+        const t = parseFloat(el.dataset.time);
+        if (video.duration && t < video.duration) {
+          video.currentTime = t;
+        }
+        aiSearchResult.hidden = false;
+        aiSearchHit.textContent = tag;
+        aiSearchTime.textContent = '⏱ ' + formatTime(t) + ' （点击跳转）';
+        showToast('跳转到「' + tag + '」出现位置');
+      });
+      aiSearchTags.appendChild(el);
+    });
+    aiSearchResult.hidden = true;
+  }
+
+  function aiSearch() {
+    const q = aiSearchInput.value.trim();
+    if (!q) return;
+    const tags = document.querySelectorAll('.search-tag');
+    let found = null;
+    tags.forEach(t => {
+      t.classList.remove('matched');
+      if (t.dataset.tag.includes(q) || q.includes(t.dataset.tag)) {
+        found = t;
+      }
+    });
+    if (found) {
+      found.classList.add('matched');
+      const t = parseFloat(found.dataset.time);
+      if (video.duration && t < video.duration) {
+        video.currentTime = t;
+      }
+      aiSearchResult.hidden = false;
+      aiSearchHit.textContent = found.dataset.tag;
+      aiSearchTime.textContent = '⏱ ' + formatTime(t) + ' （点击跳转）';
+      showToast('命中：' + found.dataset.tag);
+    } else {
+      aiSearchResult.hidden = false;
+      aiSearchHit.textContent = '（无匹配）';
+      aiSearchTime.textContent = '该视频未出现「' + q + '」相关内容';
+      showToast('该视频未出现「' + q + '」');
+    }
+  }
+  aiSearchBtn.addEventListener('click', aiSearch);
+  aiSearchInput.addEventListener('keydown', (e) => {
+    if (e.code === 'Enter') aiSearch();
+  });
+  aiSearchTime.addEventListener('click', () => {
+    const t = parseFloat(aiSearchTime.textContent.match(/[\d:]+/)?.[0]?.replace(/\./, ':') || 0);
+    // 简单解析：从 dataset 里重新取
+    const matched = document.querySelector('.search-tag.matched');
+    if (matched && video.duration) {
+      video.currentTime = parseFloat(matched.dataset.time);
+      video.play().catch(() => {});
+    }
+  });
+
   // ===== 加载视频 =====
   function loadVideo(index, autoplay = false) {
     if (index < 0) index = PLAYLIST.length - 1;
@@ -378,6 +648,11 @@
 
     // 重置字幕/弹幕状态（新视频切换时）
     resetDanmakuForNewVideo();
+    // 重置购物车 + 商品卡片 + AI 搜索（新视频切换时）
+    hideShopCursor();
+    hideShopCard();
+    renderAiTags();
+    drawWaveform();
 
     if (autoplay) {
       video.play().catch(() => {});
@@ -584,16 +859,26 @@
   });
 
   // ===== 视频事件 =====
-  video.addEventListener('play', renderBigPlay);
-  video.addEventListener('pause', renderBigPlay);
+  video.addEventListener('play', () => {
+    renderBigPlay();
+    hideShopCursor();
+    hideShopCard();
+  });
+  video.addEventListener('pause', () => {
+    renderBigPlay();
+    showShopCursor();
+  });
   video.addEventListener('loadedmetadata', () => {
     durationEl.textContent = formatTime(video.duration);
     updateProgress();
+    renderAiTags();
+    drawWaveform();
   });
   video.addEventListener('timeupdate', () => {
     updateProgress();
     updateBuffered();
     updateSubtitle();
+    drawWaveform();
   });
   video.addEventListener('progress', updateBuffered);
   video.addEventListener('waiting', () => buffering.hidden = false);
@@ -731,6 +1016,10 @@
   loadVideo(0, false);
   setVolume(1);
 
-  // 首次显示控制层
+  // 窗口尺寸变化时重绘声纹波形
+  window.addEventListener('resize', drawWaveform);
+
+  // 首次显示控制层 + 首次绘制波形
   playerWrap.classList.add('paused');
+  setTimeout(drawWaveform, 100);
 })();
